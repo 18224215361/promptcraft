@@ -1,13 +1,16 @@
 import os
 from flask import Flask, render_template, request, jsonify, Response
-from anthropic import Anthropic
+from openai import OpenAI
 from dotenv import load_dotenv
 import json
 
 load_dotenv()
 
 app = Flask(__name__)
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com",
+)
 
 STYLE_CONFIG = {
     "marketing": {
@@ -54,13 +57,15 @@ def optimize():
     config = STYLE_CONFIG.get(style, STYLE_CONFIG["general"])
 
     try:
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
+        resp = client.chat.completions.create(
+            model="deepseek-chat",
             max_tokens=1024,
-            system=config["system"],
-            messages=[{"role": "user", "content": user_input}],
+            messages=[
+                {"role": "system", "content": config["system"]},
+                {"role": "user", "content": user_input},
+            ],
         )
-        prompt = resp.content[0].text
+        prompt = resp.choices[0].message.content
         return jsonify({"prompt": prompt})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -78,13 +83,15 @@ def generate():
     config = STYLE_CONFIG.get(style, STYLE_CONFIG["general"])
 
     try:
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
+        resp = client.chat.completions.create(
+            model="deepseek-chat",
             max_tokens=2048,
-            system=f"根据以下提示词，生成一段示例输出。用中文，直接输出内容，不要额外解释。\n\n提示词：{prompt}",
-            messages=[{"role": "user", "content": "请根据上述提示词生成示例输出。"}],
+            messages=[
+                {"role": "system", "content": f"根据以下提示词，生成一段示例输出。用中文，直接输出内容，不要额外解释。\n\n提示词：{prompt}"},
+                {"role": "user", "content": "请根据上述提示词生成示例输出。"},
+            ],
         )
-        example = resp.content[0].text
+        example = resp.choices[0].message.content
         return jsonify({"example": example})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
