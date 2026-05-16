@@ -97,11 +97,6 @@ def generate():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/debug")
-def debug():
-    return jsonify({"key_exists": bool(os.getenv("DEEPSEEK_API_KEY")), "key_prefix": (os.getenv("DEEPSEEK_API_KEY") or "")[:20]})
-
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"
